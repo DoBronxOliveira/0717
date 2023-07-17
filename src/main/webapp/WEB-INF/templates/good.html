@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+    <!--BootStrap-->
+    <link rel="stylesheet" href="/ssm/bootstrap-3.4.1-dist/css/bootstrap.css">
+    <script src="/ssm/js/jquery-1.11.1-min.js"></script>
+    <script src="/ssm/bootstrap-3.4.1-dist/js/bootstrap.js"></script>
+
+    <!--Layui-->
+    <link rel="stylesheet" href="/ssm/layui/css/layui.css" />
+    <script src="/ssm/layui/layui.js"></script>
+
+    <!--BootStrap分页插件-->
+    <link rel="stylesheet" href="/ssm/bs_pagination/jquery.bs_pagination.min.css" />
+    <script src="/ssm/bs_pagination/jquery.bs_pagination.min.js"></script>
+    <script src="/ssm/bs_pagination/en.js"></script>
+
+    <script src="/ssm/js/vue.js"></script>
+    <script src="/ssm/js/axios.min.js"></script>
+</head>
+<body>
+    <table style="width: 800px;height: 500px" align="center"
+     class="table table-striped table-bordered table-hover"
+    >
+        <caption>
+            <h3 style="text-align: center">
+                商品管理系统
+            </h3>
+        </caption>
+        <tr>
+            <td style="text-align: center" colspan="2">
+                <button class="btn btn-success" data-toggle="modal" data-target="#myModal">新增</button>
+                <button class="btn btn-danger" onclick="batchDelete()">批量删除</button>
+            </td>
+            <td colspan="5">
+                <form id="queryForm" class="form-inline">
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="exampleInputEmail3" name="name" placeholder="商品名称">
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="startDate" class="form-control" name="startDate"  placeholder="上架开始时间">
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="endDate" class="form-control" name="endDate" placeholder="上架结束时间">
+                    </div>
+                    <button style="width: 80px" type="submit" class="btn btn-primary">
+                        <span style="margin-right: 3px" class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                        查询
+                    </button>
+                </form>
+            </td>
+        </tr>
+        <tr style="background: rgba(0,0,0,.3)">
+            <th style="width: 20px">
+                <input type="checkbox" name="goodId" onclick="selectAll(this)" />
+            </th>
+            <th>
+                商品名称
+            </th>
+            <th>
+                上架时间
+            </th>
+            <th>
+                单价
+            </th>
+            <th>
+                评价星级
+            </th>
+            <th>
+                商品种类
+            </th>
+            <th>
+               操作
+            </th>
+        </tr>
+
+        <tbody id="body">
+
+        </tbody>
+        <tr>
+            <td colspan="7">
+                <div id="pagination"></div>
+            </td>
+        </tr>
+
+    </table>
+</body>
+</html>
+<script>
+
+    /*layui日期插件*/
+    layui.use('laydate', function(){
+        let laydate = layui.laydate;
+
+        //执行一个laydate实例
+        laydate.render({
+            elem: '#startDate,#endDate' //指定元素
+        });
+    });
+
+    refresh(1,5,null,null,null);
+    function refresh(page,pageSize,name,startTime,endTime){
+        $.get('/ssm/goodList',{
+            page:page,
+            pageSize:pageSize,
+            name:name,
+            startTime:startTime,
+            endTime:endTime
+        },function (data) {
+            $('#body').html('');
+            //List<Good>
+            for(let good of data.list){
+                let name = good.name;
+                $('#body').append("<tr>" +
+                    "<td><input class='selectOne' type='checkbox' name='goodId' value='"+good.id+"'></td>" +
+                    "<td>"+good.name+"</td>" +
+                    "<td>"+good.pubdate+"</td>" +
+                    "<td>"+good.price+"</td>" +
+                    "<td>"+good.star+"</td>" +
+                    "<td>"+good.typeid+"</td>" +
+                    "<td><button class='btn btn-primary' data-toggle='modal' data-target='#updateModal' onclick='updateClick("+good.id+",\""+name+"\","+good.pubdate+","+good.price+","+good.star+","+good.typeid+")'>修改</button><button  onclick='handleClick("+good.id+")' class='btn btn-danger'>删除</button></td>" +
+                    "</tr>");
+            }
+
+            //BootStrap的分页插件
+            $("#pagination").bs_pagination({
+                currentPage: data.pageNum, // 页码
+                rowsPerPage: data.pageSize, // 每页显示的记录条数
+                maxRowsPerPage: 30, // 每页最多显示的记录条数
+                totalPages: data.pages, // 总页数
+                totalRows: data.total, // 总记录条数
+                visiblePageLinks: 4, // 显示几个卡片
+                showGoToPage: true,
+                showRowsPerPage: true,
+                showRowsInfo: true,
+                showRowsDefaultInfo: true,
+                onChangePage : function(event, obj){
+                    refresh(obj.currentPage,obj.rowsPerPage);
+                }
+            });
+        },'json');
+    }
+
+    function handleClick(id) {
+        // 点击时的处理逻辑
+        $.post(
+            "/ssm/deleteGood",
+            {"id":id},
+            function (data){
+                alert(data);
+                refresh(1,5)
+            }
+        )
+    }
+
+    function selectAll(event){
+        let select = event.checked
+        $('.selectOne').prop('checked',select)
+    }
+
+    function updateClick(id,name,pubdate,price,star,typeid){
+        $("#updateId").prop('value',id);
+        $("#updateName").prop('value',name);
+        $("#updatePubdate").prop('value',pubdate);
+        $("#updatePrice").prop('value',price);
+        $("#updateStar").prop('value',star);
+        $("#updateTypeid").prop('value',typeid);
+    }
+    // let formData=$("#queryForm").serialize()
+    const form = document.getElementById('queryForm');
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        // 获取表单数据
+        const formData = new FormData(form);
+        const name = formData.get('name');
+        const startDate = formData.get('startDate');
+        const endDate = formData.get('endDate');
+        // 拦截表单提交后的逻辑
+        refresh(1,5,name,startDate,endDate)
+    });
+
+    function batchDelete() {
+        const elements = document.querySelectorAll('.selectOne');
+        const values = [];
+        elements.forEach(el=>{
+            if (el.checked) {
+                values.push(el.getAttribute('value'));
+            }
+        });
+        $.post(
+            "/ssm/batchDeleteGood",
+            {"values":values.toString()},
+            function (data){
+                alert(data);
+                refresh(1,5)
+            }
+        )
+    }
+
+
+</script>
+
+<style>
+    button{
+        margin-left: 5px;
+    }
+
+    #queryForm input{
+        width: 160px;
+    }
+
+    #pagination{
+        height: 50px;
+    }
+
+    .row{
+        margin-top: -10px;
+    }
+</style>
+
+<!--添加模态窗口-->
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">添加商品</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal" th:action="@{/goodList}" method="post">
+                    <div class="form-group">
+                        <label for="name" class="col-sm-2 control-label">商品名称</label>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" id="name" name="name" placeholder="请输入商品名称">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="pubdate" class="col-sm-2 control-label">上架时间</label>
+                        <div class="col-sm-10">
+                            <input type="date" class="form-control" id="pubdate" name="pubdate" placeholder="上架时间">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="price" class="col-sm-2 control-label">单价（元）</label>
+                        <div class="col-sm-10">
+                            <input type="number" class="form-control" id="price" name="price" placeholder="请输入单价">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="star" class="col-sm-2 control-label">星级</label>
+                        <div class="col-sm-10">
+                            <input type="number" class="form-control" id="star" name="star" placeholder="请输入星级">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="typeid" class="col-sm-2 control-label">商品种类ID</label>
+                        <div class="col-sm-10">
+                            <input type="number" class="form-control" id="typeid" name="typeid" placeholder="请输入商品种类ID">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-offset-2 col-sm-10">
+                            <button type="submit" class="btn btn-default">新增</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!--添加模态窗口-->
+<!-- Modal -->
+<div class="modal fade" id="updateModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="updateModalLabel">修改商品</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal" th:action="@{/updateGood}" method="post">
+                    <input type="hidden" id="updateId" name="id">
+                    <div class="form-group">
+                        <label for="name" class="col-sm-2 control-label">商品名称</label>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" id="updateName" name="name" placeholder="商品名称">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="pubdate" class="col-sm-2 control-label">上架时间</label>
+                        <div class="col-sm-10">
+                            <input type="date" class="form-control" id="updatePubdate" name="pubdate" placeholder="上架时间">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="price" class="col-sm-2 control-label">单价</label>
+                        <div class="col-sm-10">
+                            <input type="number" class="form-control" id="updatePrice" name="price" placeholder="单价">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="star" class="col-sm-2 control-label">评价星级</label>
+                        <div class="col-sm-10">
+                            <input type="number" class="form-control" id="updateStar" name="star" placeholder="评价星级">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="typeid" class="col-sm-2 control-label">商品种类</label>
+                        <div class="col-sm-10">
+                            <input type="number" class="form-control" id="updateTypeid" name="typeid" placeholder="商品种类">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-offset-2 col-sm-10">
+                            <button type="submit" class="btn btn-default">更新</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>

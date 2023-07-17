@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iweb.ssm.mapper.GoodMapper">
+
+
+    <!--查询所有商品-->
+    <select id="goodList" resultType="good">
+        select * from tb_goods
+        <where>
+            <if test="name !=null and name!=''">
+                name like concat('%',#{name},'%')
+            </if>
+            <if test="startTime!=null and startTime!=''">
+                and pubdate &gt; #{startTime}
+            </if>
+            <if test="endTime!=null and endTime!=''">
+                and pubdate &lt; #{endTime}
+            </if>
+        </where>
+    </select>
+    <!--void addGood(Good good);-->
+    <insert id="addGood">
+        insert into tb_goods(name,pubdate,price,star,typeid) values (#{name},#{pubdate},#{price},#{star},#{typeid})
+    </insert>
+    <!--void batchDeleteGood(String ids);-->
+    <delete id="batchDeleteGood">
+        delete from tb_goods where id in (${ids})
+    </delete>
+    <!--void deleteGood(Integer id);-->
+    <delete id="deleteGood">
+        delete from tb_goods where id = #{id}
+    </delete>
+    <!--void updateGood(Good good);-->
+    <update id="updateGood">
+        update tb_goods set
+        <trim suffixOverrides=",">
+            <if test="name != null and name !=''">
+                name = #{name},
+            </if>
+            <if test="pubdate != null and pubdate !=''">
+                pubdate = #{pubdate},
+            </if>
+            <if test="price != null and price !=''">
+                price = #{price},
+            </if>
+            <if test="star != null and star !=''">
+                name = #{name},
+            </if>
+            <if test="typeid != null and typeid !=''">
+                typeid = #{typeid}
+            </if>
+            where id = #{id}
+        </trim>
+    </update>
+</mapper>
